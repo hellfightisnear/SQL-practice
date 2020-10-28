@@ -88,3 +88,24 @@ SELECT DISTINCT continent  FROM world x
 WHERE 100000000<= ALL (SELECT SUM(population) FROM world z
                        WHERE z.continent = x.continent  
                        GROUP BY  z.continent)
+
+
+-- Task from https://sqlzoo.net/wiki/The_nobel_table_can_be_used_to_practice_more_SUM_and_COUNT_functions.
+-- Table nobel(yr, subject, winner)
+
+/*Show winners who have won more than once.*/
+
+SELECT winner FROM nobel
+GROUP BY winner HAVING COUNT(winner)>1
+
+/*Show winners who have won more than one subject.*/
+
+SELECT winner FROM nobel
+GROUP BY winner  HAVING COUNT(DISTINCT subject)>1
+
+/*Show the year and subject where 3 prizes were given. Show only years 2000 onwards.*/
+
+SELECT yr, subject FROM nobel
+WHERE yr>=2000
+GROUP BY yr, subject HAVING COUNT(subject)=3
+
