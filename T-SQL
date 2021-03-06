@@ -1,0 +1,127 @@
+--1.Create datebase for InternetShopDB 
+
+CREATE DATABASE InternetShopDB               
+COLLATE Cyrillic_General_CI_AS
+GO
+
+--2. Create tables:
+/*1) Customers (ID,FName,MName,LName,[Address],City,Phone,DateInSystem)
+  2) Employees (ID,FName,MName,LName,Post,Salary,PriorSalary)
+  3) EmployeesInfo (ID,MaritalStatus,BirthDate,[Address],Phone) 
+  4) Products (ID,Name) 
+  5) ProductDetails (ID,Color,[Description])
+  6) Stocks (ProductID, Qty)
+  7) Orders (ID,CustomerID,EmployeeID,OrderDate)
+  8) OrderDetails (OrderID,LineItem,ProductID,Qty,Price,TotalPrice) */
+
+CREATE TABLE Customers (
+	ID int IDENTITY NOT NULL,
+	FName Varchar(20) NOT NULL,
+	MName Varchar(20) NOT NULL,	
+	LName Varchar(20) NULL,
+	[Address] Varchar(100) NULL,
+	City Varchar(20) NULL,
+	Phone char(12) NOT NULL,
+	DateInSystem SmallDateTime NOT NULL,
+	PRIMARY KEY(ID)
+	)
+	GO
+CREATE TABLE Employees (
+	ID int IDENTITY NOT NULL,
+	FName Varchar(20) NOT NULL,
+	MName Varchar(20) NOT NULL,
+	LName Varchar(20) NOT NULL,
+	Post Varchar(20) NOT NULL,
+	Salary money NOT NULL,
+	PriorSalary int NOT NULL,
+	PRIMARY KEY(ID)
+	)
+	GO
+
+CREATE TABLE EmployeesInfo (
+	ID  int NOT NULL UNIQUE,
+	MaritalStatus Varchar(20) NOT NULL,
+	BirthDate DATE NOT NULL,
+	[Address] Varchar(100) NULL,
+	Phone char(12) NOT NULL,
+	) 
+	GO
+	
+CREATE TABLE Products (
+	ID int IDENTITY NOT NULL,
+	Name Varchar(100) NOT NULL,
+	PRIMARY KEY(ID)
+	) 
+	GO
+	
+CREATE TABLE ProductDetails (
+	ID int NOT NULL UNIQUE,
+	Color Varchar(20) NOT NULL,
+	[Description] Varchar(1000) NOT NULL,
+	)
+	GO
+
+CREATE TABLE Stocks (
+	ProductID int NOT NULL,
+	Qty int NOT NULL,
+	PRIMARY KEY(ProductID)
+	)
+	GO
+	
+CREATE TABLE Orders (
+	ID int IDENTITY NOT NULL,
+	CustomerID int  NOT NULL,
+	EmployeeID int  NULL,
+	OrderDate SmallDateTime NOT NULL,
+	PRIMARY KEY(ID)
+	)
+	GO
+
+CREATE TABLE OrderDetails (
+	OrderID int NOT NULL,
+	LineItem int NOT NULL,
+	ProductID int NOT NULL,
+	Qty int NOT NULL,
+	Price int NOT NULL,
+	TotalPrice AS CONVERT(money, Qty*Price)
+	PRIMARY KEY(OrderID,LineItem)
+	)
+	GO
+
+-- 3. Establish relationships between tables
+ALTER TABLE Orders ADD FOREIGN KEY (CustomerID) REFERENCES Customers(ID);
+ALTER TABLE Orders ADD FOREIGN KEY (EmployeeID) REFERENCES Employees(ID);
+ALTER TABLE Stocks ADD FOREIGN KEY (ProductID) REFERENCES Products(ID);
+ALTER TABLE Employeesinfo ADD FOREIGN KEY (ID) REFERENCES Employees(ID);
+ALTER TABLE ProductDetails ADD FOREIGN KEY (ID) REFERENCES Products(ID);
+ALTER TABLE OrderDetails ADD FOREIGN KEY (OrderID) REFERENCES Orders(ID);
+ALTER TABLE OrderDetails ADD FOREIGN KEY (ProductID) REFERENCES Products(ID);
+
+--4.1	Create a restriction on the validity of entering the phone number.
+
+ALTER TABLE Customers ADD CHECK (Phone IS LIKE '([0-9][0-9][0-9])[0-9][0-9][0-9][0-9][0-9][0-9][0-9]');
+ALTER TABLE EmployeesInfo ADD CHECK (Phone IS LIKE '([0-9][0-9][0-9])[0-9][0-9][0-9][0-9][0-9][0-9][0-9]');
+
+--4.2	Set an age limit for employees between 18 and 50
+
+ALTER TABLE EmployeesInfo ADD CHECK (BirthDate BETWEEN   DATEADD(YEAR,-50,GETDATE()) AND  DATEADD(YEAR,-18,GETDATE()));
+
+--4.3 Create a restriction according to which orders can be registered from the day the store was opened until today (opening day - 90 days ago)
+
+ALTER TABLE Orders ADD CHECK (GETDATE( )-OrderDate<=90);
+
+--4.4 	Create a restriction on data entry in the "Marital status" column (input: Женат, Не женат, Замужем, Не замежем).
+
+ALTER TABLE EmployeesInfo ADD CHECK (MaritalStatus IN ('Не женат','Женат','Замужем','Не Замужем'));
+
+--4.5	Create a restriction that the customer can be registered in the system with the opening day until today.
+
+ALTER TABLE Customers ADD CHECK (GETDATE( )-90<=DateInSystem);
+
+--4.6	Create a restriction according to which the bonus cannot be equal or greater than the salary.
+
+ALTER TABLE Employees ADD CHECK (Salary>PriorSalary);
+
+--4.7	Create a restriction that the goods balance in stock can not be negative.
+
+ALTER TABLE Stocks ADD CHECK (Qty>=0);
